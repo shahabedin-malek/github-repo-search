@@ -1036,3 +1036,463 @@ button:disabled {
   background: #111827;
   transition: width 0.2s ease;
 }
+
+/* =========================================================
+   PHASE 8 — RESPONSIVE UI
+========================================================= */
+
+/* =========================================================
+   BASE RESPONSIVE SAFETY
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select {
+  max-width: 100%;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* =========================================================
+   MOBILE REPOSITORY LIST
+========================================================= */
+
+.repository-mobile-list {
+  display: none;
+}
+
+.repository-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.repository-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.repository-card-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.repository-card-title .repository-name {
+  max-width: 100%;
+}
+
+.repository-owner {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.repository-card-description {
+  margin: 13px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.repository-card-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.repository-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.repository-card-metrics > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.repository-card-metrics span {
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.repository-card-metrics strong {
+  overflow: hidden;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repository-card-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.repository-card-link {
+  margin-left: auto;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.repository-card-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   LARGE TABLET / SMALL DESKTOP
+========================================================= */
+
+@media (max-width: 1100px) {
+  .app-shell {
+    width: min(
+      calc(100% - 32px),
+      1180px
+    );
+  }
+
+  .hero {
+    padding-top: 64px;
+  }
+
+  .hero h1 {
+    font-size: clamp(
+      42px,
+      6vw,
+      68px
+    );
+  }
+
+  .section-header {
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .repository-table {
+    min-width: 920px;
+  }
+
+  .repository-main-cell {
+    min-width: 400px;
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+  .app-shell {
+    width: min(
+      calc(100% - 28px),
+      720px
+    );
+  }
+
+  .hero {
+    padding-top: 52px;
+  }
+
+  .hero h1 {
+    max-width: 650px;
+    font-size: clamp(
+      40px,
+      8vw,
+      58px
+    );
+    line-height: 1.02;
+  }
+
+  .hero-description {
+    max-width: 620px;
+    font-size: 15px;
+  }
+
+  .search-form {
+    gap: 8px;
+  }
+
+  .search-form button {
+    padding-inline: 18px;
+  }
+
+  .section-header {
+    flex-direction: column;
+  }
+
+  .export-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .repository-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pagination-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .jump-page-form {
+    margin-bottom: 8px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 640px) {
+  .app-shell {
+    width: calc(100% - 24px);
+  }
+
+  .hero {
+    padding-top: 36px;
+  }
+
+  .hero-badge {
+    max-width: 100%;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  .hero h1 {
+    margin-top: 15px;
+    font-size: clamp(
+      34px,
+      11vw,
+      48px
+    );
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+  }
+
+  .hero-description {
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .search-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .search-input-wrapper {
+    width: 100%;
+  }
+
+  .search-form input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-form button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .example-searches {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 13px;
+  }
+
+  .example-searches > span {
+    width: 100%;
+  }
+
+  .results-section {
+    margin-top: 34px;
+  }
+
+  .section-header {
+    gap: 14px;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+  }
+
+  .section-header p {
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .export-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .export-button,
+  .export-all-button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .pagination-summary {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .per-page-control {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .per-page-control select {
+    min-width: 88px;
+  }
+
+  .search-limit-notice {
+    font-size: 11px;
+  }
+
+  /* Hide desktop table */
+
+  .repository-table-wrapper {
+    display: none;
+  }
+
+  /* Show mobile cards */
+
+  .repository-mobile-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .repository-card {
+    padding: 14px;
+  }
+
+  .repository-card-metrics {
+    gap: 10px;
+  }
+
+  .pagination-container {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .pagination-pages {
+    max-width: calc(
+      100% - 76px
+    );
+    overflow: hidden;
+  }
+
+  .pagination-page {
+    flex: 0 0 34px;
+  }
+
+  .pagination-arrow {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .pagination-arrow span {
+    display: none;
+  }
+
+  .pagination-ellipsis {
+    flex: 0 0 22px;
+  }
+
+  .jump-page-form {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .footer {
+    margin-top: 36px;
+    padding-bottom: 24px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+  .app-shell {
+    width: calc(100% - 20px);
+  }
+
+  .hero h1 {
+    font-size: 34px;
+  }
+
+  .hero-description {
+    font-size: 13px;
+  }
+
+  .repository-card-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 12px;
+  }
+
+  .repository-card-footer {
+    align-items: flex-start;
+  }
+
+  .repository-card-link {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 3px;
+  }
+
+  .pagination-pages {
+    gap: 2px;
+  }
+
+  .pagination-page {
+    width: 31px;
+    flex-basis: 31px;
+  }
+}

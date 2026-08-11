@@ -5,18 +5,6 @@ import {
   useState,
 } from "react";
 
-function escapeCsvValue(
-  value: unknown
-): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  const stringValue = String(value);
-
-  return `"${stringValue.replace(/"/g, '""')}"`;
-}
-
 interface Repository {
   id: number;
   name: string;
@@ -70,106 +58,25 @@ const PER_PAGE_OPTIONS = [
   100,
 ];
 
-export default function Home() {
-  function exportCurrentPageToCsv() {
-  if (repositories.length === 0) {
-    return;
+function escapeCsvValue(
+  value: unknown
+): string {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
   }
 
-  const headers = [
-    "Repository",
-    "Repository URL",
-    "Owner",
-    "Owner URL",
-    "Description",
-    "Stars",
-    "Forks",
-    "Watchers",
-    "Open Issues",
-    "Language",
-    "Topics",
-    "Archived",
-    "Fork",
-    "Private",
-    "Default Branch",
-    "License",
-    "Homepage",
-    "Created At",
-    "Updated At",
-    "Pushed At",
-  ];
+  const stringValue = String(value);
 
-  const rows = repositories.map(
-    (repository) => [
-      repository.fullName,
-      repository.url,
-      repository.owner.login,
-      repository.owner.url,
-      repository.description ?? "",
-      repository.stars,
-      repository.forks,
-      repository.watchers,
-      repository.openIssues,
-      repository.language ?? "",
-      repository.topics.join(", "),
-      repository.archived,
-      repository.fork,
-      repository.private,
-      repository.defaultBranch,
-      repository.license?.name ?? "",
-      repository.homepage ?? "",
-      repository.createdAt,
-      repository.updatedAt,
-      repository.pushedAt ?? "",
-    ]
-  );
-
-  const csvRows = [
-    headers.map(escapeCsvValue).join(","),
-    ...rows.map((row) =>
-      row
-        .map(escapeCsvValue)
-        .join(",")
-    ),
-  ];
-
-  const csvContent =
-    "\uFEFF" +
-    csvRows.join("\r\n");
-
-  const blob = new Blob(
-    [csvContent],
-    {
-      type: "text/csv;charset=utf-8;",
-    }
-  );
-
-  const url =
-    URL.createObjectURL(blob);
-
-  const link =
-    document.createElement("a");
-
-  link.href = url;
-
-  const safeQuery =
-    submittedQuery
-      .trim()
-      .replace(/[^a-z0-9]+/gi, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase() || "search";
-
-  link.download =
-    `github-repositories-${safeQuery}-page-${currentPage}.csv`;
-
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-
-  URL.revokeObjectURL(url);
+  return `"${stringValue.replace(
+    /"/g,
+    '""'
+  )}"`;
 }
+
+export default function Home() {
   const [query, setQuery] =
     useState("");
 
@@ -234,246 +141,20 @@ export default function Home() {
     setJumpPage,
   ] = useState("");
 
-const [
-  isCollecting,
-  setIsCollecting,
-] = useState(false);
+  const [
+    isCollecting,
+    setIsCollecting,
+  ] = useState(false);
 
-const [
-  collectionProgress,
-  setCollectionProgress,
-] = useState(0);
+  const [
+    collectionProgress,
+    setCollectionProgress,
+  ] = useState(0);
 
-const [
-  collectedCount,
-  setCollectedCount,
-] = useState(0);
-
-async function exportAllCollectedToCsv() {
-  if (
-    !submittedQuery ||
-    repositories.length === 0 ||
-    isCollecting
-  ) {
-    return;
-  }
-
-  setError("");
-  setIsCollecting(true);
-  setCollectionProgress(0);
-  setCollectedCount(0);
-
-  try {
-    const collectionPageSize = 100;
-
-    const maximumResults = Math.min(
-      availableResults,
-      searchLimit
-    );
-
-    const pagesToCollect = Math.ceil(
-      maximumResults /
-        collectionPageSize
-    );
-
-    const allRepositories: Repository[] =
-      [];
-
-    for (
-      let page = 1;
-      page <= pagesToCollect;
-      page++
-    ) {
-      const response =
-        await fetch(
-          `/api/github/search?q=${encodeURIComponent(
-            submittedQuery
-          )}&page=${page}&per_page=${collectionPageSize}`
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            `Unable to collect page ${page}.`
-        );
-      }
-
-      const searchData =
-        data as SearchResponse;
-
-      allRepositories.push(
-        ...searchData.repositories
-      );
-
-      setCollectedCount(
-        allRepositories.length
-      );
-
-      setCollectionProgress(
-        Math.round(
-          (page / pagesToCollect) *
-            100
-        )
-      );
-    }
-
-    /*
-     * Remove duplicate repositories by
-     * GitHub repository ID.
-     */
-    const uniqueRepositories =
-      Array.from(
-        new Map(
-          allRepositories.map(
-            (repository) => [
-              repository.id,
-              repository,
-            ]
-          )
-        ).values()
-      );
-
-    if (
-      uniqueRepositories.length === 0
-    ) {
-      throw new Error(
-        "No repositories were collected."
-      );
-    }
-
-    const headers = [
-      "Repository",
-      "Repository URL",
-      "Owner",
-      "Owner URL",
-      "Description",
-      "Stars",
-      "Forks",
-      "Watchers",
-      "Open Issues",
-      "Language",
-      "Topics",
-      "Archived",
-      "Fork",
-      "Private",
-      "Default Branch",
-      "License",
-      "Homepage",
-      "Created At",
-      "Updated At",
-      "Pushed At",
-    ];
-
-    const rows =
-      uniqueRepositories.map(
-        (repository) => [
-          repository.fullName,
-          repository.url,
-          repository.owner.login,
-          repository.owner.url,
-          repository.description ?? "",
-          repository.stars,
-          repository.forks,
-          repository.watchers,
-          repository.openIssues,
-          repository.language ?? "",
-          repository.topics.join(
-            ", "
-          ),
-          repository.archived,
-          repository.fork,
-          repository.private,
-          repository.defaultBranch,
-          repository.license?.name ??
-            "",
-          repository.homepage ?? "",
-          repository.createdAt,
-          repository.updatedAt,
-          repository.pushedAt ?? "",
-        ]
-      );
-
-    const csvRows = [
-      headers
-        .map(escapeCsvValue)
-        .join(","),
-
-      ...rows.map((row) =>
-        row
-          .map(escapeCsvValue)
-          .join(",")
-      ),
-    ];
-
-    const csvContent =
-      "\uFEFF" +
-      csvRows.join("\r\n");
-
-    const blob = new Blob(
-      [csvContent],
-      {
-        type: "text/csv;charset=utf-8;",
-      }
-    );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement("a");
-
-    link.href = url;
-
-    const safeQuery =
-      submittedQuery
-        .trim()
-        .replace(
-          /[^a-z0-9]+/gi,
-          "-"
-        )
-        .replace(
-          /^-+|-+$/g,
-          ""
-        )
-        .toLowerCase() ||
-      "search";
-
-    link.download =
-      `github-repositories-${safeQuery}-all.csv`;
-
-    document.body.appendChild(
-      link
-    );
-
-    link.click();
-
-    document.body.removeChild(
-      link
-    );
-
-    URL.revokeObjectURL(url);
-
-    setCollectedCount(
-      uniqueRepositories.length
-    );
-  } catch (collectionError) {
-    console.error(
-      "Collection failed:",
-      collectionError
-    );
-
-    setError(
-      collectionError instanceof Error
-        ? collectionError.message
-        : "Unable to collect all repositories."
-    );
-  } finally {
-    setIsCollecting(false);
-  }
-}
+  const [
+    collectedCount,
+    setCollectedCount,
+  ] = useState(0);
 
   async function searchRepositories(
     searchQuery: string,
@@ -554,7 +235,7 @@ async function exportAllCollectedToCsv() {
       setError(
         searchError instanceof Error
           ? searchError.message
-          : "GitHub API rate limit reached."
+          : "Something went wrong while searching GitHub."
       );
     } finally {
       setIsLoading(false);
@@ -590,6 +271,7 @@ async function exportAllCollectedToCsv() {
   ) {
     if (
       isLoading ||
+      isCollecting ||
       !submittedQuery ||
       page === currentPage ||
       page < 1 ||
@@ -605,25 +287,25 @@ async function exportAllCollectedToCsv() {
     );
 
     const resultsSection =
-  document.querySelector(
-    ".results-section"
-  );
+      document.querySelector(
+        ".results-section"
+      );
 
-if (resultsSection) {
-  const top =
-    resultsSection.getBoundingClientRect()
-      .top +
-    window.scrollY -
-    20;
+    if (resultsSection) {
+      const top =
+        resultsSection.getBoundingClientRect()
+          .top +
+        window.scrollY -
+        20;
 
-  window.scrollTo({
-    top,
-    behavior: "smooth",
-  });
-}
-}
+      window.scrollTo({
+        top,
+        behavior: "smooth",
+      });
+    }
+  }
 
-async function handlePerPageChange(
+  async function handlePerPageChange(
     event: React.ChangeEvent<HTMLSelectElement>
   ) {
     const newPerPage =
@@ -758,12 +440,356 @@ async function handlePerPageChange(
     return pages;
   }
 
+  function exportCurrentPageToCsv() {
+    if (
+      repositories.length === 0 ||
+      isCollecting
+    ) {
+      return;
+    }
+
+    const headers = [
+      "Repository",
+      "Repository URL",
+      "Owner",
+      "Owner URL",
+      "Description",
+      "Stars",
+      "Forks",
+      "Watchers",
+      "Open Issues",
+      "Language",
+      "Topics",
+      "Archived",
+      "Fork",
+      "Private",
+      "Default Branch",
+      "License",
+      "Homepage",
+      "Created At",
+      "Updated At",
+      "Pushed At",
+    ];
+
+    const rows =
+      repositories.map(
+        (repository) => [
+          repository.fullName,
+          repository.url,
+          repository.owner.login,
+          repository.owner.url,
+          repository.description ?? "",
+          repository.stars,
+          repository.forks,
+          repository.watchers,
+          repository.openIssues,
+          repository.language ?? "",
+          repository.topics.join(
+            ", "
+          ),
+          repository.archived,
+          repository.fork,
+          repository.private,
+          repository.defaultBranch,
+          repository.license?.name ??
+            "",
+          repository.homepage ?? "",
+          repository.createdAt,
+          repository.updatedAt,
+          repository.pushedAt ?? "",
+        ]
+      );
+
+    const csvRows = [
+      headers
+        .map(escapeCsvValue)
+        .join(","),
+
+      ...rows.map((row) =>
+        row
+          .map(escapeCsvValue)
+          .join(",")
+      ),
+    ];
+
+    const csvContent =
+      "\uFEFF" +
+      csvRows.join("\r\n");
+
+    const blob = new Blob(
+      [csvContent],
+      {
+        type: "text/csv;charset=utf-8;",
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+
+    const safeQuery =
+      submittedQuery
+        .trim()
+        .replace(
+          /[^a-z0-9]+/gi,
+          "-"
+        )
+        .replace(
+          /^-+|-+$/g,
+          ""
+        )
+        .toLowerCase() ||
+      "search";
+
+    link.download =
+      `github-repositories-${safeQuery}-page-${currentPage}.csv`;
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    document.body.removeChild(
+      link
+    );
+
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportAllCollectedToCsv() {
+    if (
+      !submittedQuery ||
+      repositories.length === 0 ||
+      isCollecting
+    ) {
+      return;
+    }
+
+    setError("");
+    setIsCollecting(true);
+    setCollectionProgress(0);
+    setCollectedCount(0);
+
+    try {
+      const collectionPageSize =
+        100;
+
+      const maximumResults =
+        Math.min(
+          availableResults,
+          searchLimit
+        );
+
+      const pagesToCollect =
+        Math.ceil(
+          maximumResults /
+            collectionPageSize
+        );
+
+      const allRepositories: Repository[] =
+        [];
+
+      for (
+        let page = 1;
+        page <= pagesToCollect;
+        page++
+      ) {
+        const response =
+          await fetch(
+            `/api/github/search?q=${encodeURIComponent(
+              submittedQuery
+            )}&page=${page}&per_page=${collectionPageSize}`
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+              `Unable to collect page ${page}.`
+          );
+        }
+
+        const searchData =
+          data as SearchResponse;
+
+        allRepositories.push(
+          ...searchData.repositories
+        );
+
+        setCollectedCount(
+          allRepositories.length
+        );
+
+        setCollectionProgress(
+          Math.round(
+            (page /
+              pagesToCollect) *
+              100
+          )
+        );
+      }
+
+      const uniqueRepositories =
+        Array.from(
+          new Map(
+            allRepositories.map(
+              (repository) => [
+                repository.id,
+                repository,
+              ]
+            )
+          ).values()
+        );
+
+      if (
+        uniqueRepositories.length ===
+        0
+      ) {
+        throw new Error(
+          "No repositories were collected."
+        );
+      }
+
+      const headers = [
+        "Repository",
+        "Repository URL",
+        "Owner",
+        "Owner URL",
+        "Description",
+        "Stars",
+        "Forks",
+        "Watchers",
+        "Open Issues",
+        "Language",
+        "Topics",
+        "Archived",
+        "Fork",
+        "Private",
+        "Default Branch",
+        "License",
+        "Homepage",
+        "Created At",
+        "Updated At",
+        "Pushed At",
+      ];
+
+      const rows =
+        uniqueRepositories.map(
+          (repository) => [
+            repository.fullName,
+            repository.url,
+            repository.owner.login,
+            repository.owner.url,
+            repository.description ?? "",
+            repository.stars,
+            repository.forks,
+            repository.watchers,
+            repository.openIssues,
+            repository.language ?? "",
+            repository.topics.join(
+              ", "
+            ),
+            repository.archived,
+            repository.fork,
+            repository.private,
+            repository.defaultBranch,
+            repository.license?.name ??
+              "",
+            repository.homepage ?? "",
+            repository.createdAt,
+            repository.updatedAt,
+            repository.pushedAt ?? "",
+          ]
+        );
+
+      const csvRows = [
+        headers
+          .map(escapeCsvValue)
+          .join(","),
+
+        ...rows.map((row) =>
+          row
+            .map(escapeCsvValue)
+            .join(",")
+        ),
+      ];
+
+      const csvContent =
+        "\uFEFF" +
+        csvRows.join("\r\n");
+
+      const blob = new Blob(
+        [csvContent],
+        {
+          type: "text/csv;charset=utf-8;",
+        }
+      );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+
+      const safeQuery =
+        submittedQuery
+          .trim()
+          .replace(
+            /[^a-z0-9]+/gi,
+            "-"
+          )
+          .replace(
+            /^-+|-+$/g,
+            ""
+          )
+          .toLowerCase() ||
+        "search";
+
+      link.download =
+        `github-repositories-${safeQuery}-all.csv`;
+
+      document.body.appendChild(
+        link
+      );
+
+      link.click();
+
+      document.body.removeChild(
+        link
+      );
+
+      URL.revokeObjectURL(url);
+
+      setCollectedCount(
+        uniqueRepositories.length
+      );
+    } catch (collectionError) {
+      console.error(
+        "Collection failed:",
+        collectionError
+      );
+
+      setError(
+        collectionError instanceof Error
+          ? collectionError.message
+          : "Unable to collect all repositories."
+      );
+    } finally {
+      setIsCollecting(false);
+    }
+  }
+
   return (
     <main className="app-shell">
-      {/* =========================
-          HERO
-      ========================= */}
-
       <section className="hero">
         <div className="hero-badge">
           GitHub Repository Research Tool
@@ -779,14 +805,10 @@ async function handlePerPageChange(
 
         <p className="hero-description">
           Search GitHub repositories by
-          keyword and explore the results
-          for further research and
-          analysis.
+          keyword and explore the
+          results for further research
+          and analysis.
         </p>
-
-        {/* =========================
-            SEARCH FORM
-        ========================= */}
 
         <form
           className="search-form"
@@ -822,23 +844,20 @@ async function handlePerPageChange(
               }}
               placeholder="Search repositories..."
               aria-label="Search GitHub repositories"
-              aria-invalid={Boolean(
-                error
-              )}
-              aria-describedby={
-                error
-                  ? "search-error"
-                  : undefined
+              disabled={
+                isLoading ||
+                isCollecting
               }
-              disabled={isLoading}
               autoComplete="off"
             />
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
-            aria-busy={isLoading}
+            disabled={
+              isLoading ||
+              isCollecting
+            }
           >
             {isLoading ? (
               <>
@@ -851,13 +870,8 @@ async function handlePerPageChange(
           </button>
         </form>
 
-        {/* =========================
-            ERROR
-        ========================= */}
-
         {error && (
           <div
-            id="search-error"
             className="search-error"
             role="alert"
           >
@@ -896,66 +910,33 @@ async function handlePerPageChange(
           </div>
         )}
 
-        {/* =========================
-            EXAMPLES
-        ========================= */}
-
         <div className="example-searches">
           <span>Try:</span>
 
-          <button
-            type="button"
-            onClick={() =>
-              handleExampleSearch(
-                "ai agent"
-              )
-            }
-            disabled={isLoading}
-          >
-            ai agent
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleExampleSearch(
-                "nextjs"
-              )
-            }
-            disabled={isLoading}
-          >
-            nextjs
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleExampleSearch(
-                "python"
-              )
-            }
-            disabled={isLoading}
-          >
-            python
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleExampleSearch(
-                "web scraper"
-              )
-            }
-            disabled={isLoading}
-          >
-            web scraper
-          </button>
+          {[
+            "ai agent",
+            "nextjs",
+            "python",
+            "web scraper",
+          ].map((example) => (
+            <button
+              key={example}
+              type="button"
+              onClick={() =>
+                handleExampleSearch(
+                  example
+                )
+              }
+              disabled={
+                isLoading ||
+                isCollecting
+              }
+            >
+              {example}
+            </button>
+          ))}
         </div>
       </section>
-
-      {/* =========================
-          RESULTS
-      ========================= */}
 
       <section className="results-section">
         <div className="section-header">
@@ -973,78 +954,63 @@ async function handlePerPageChange(
             </p>
           </div>
 
-<div className="export-actions">
-{isCollecting && (
-  <div className="collection-progress">
-    <div className="collection-progress-text">
-      <span>
-        Collecting repositories...
-      </span>
+          <div className="export-actions">
+            <button
+              type="button"
+              className="export-button"
+              onClick={
+                exportCurrentPageToCsv
+              }
+              disabled={
+                repositories.length ===
+                  0 ||
+                isCollecting
+              }
+            >
+              Export current page
+            </button>
 
-      <strong>
-        {collectedCount}
-      </strong>
-    </div>
-
-    <div className="collection-progress-track">
-      <div
-        className="collection-progress-bar"
-        style={{
-          width: `${collectionProgress}%`,
-        }}
-      />
-    </div>
-  </div>
-)}
-  <button
-    type="button"
-    className="export-button"
-    onClick={exportCurrentPageToCsv}
-    disabled={repositories.length === 0}
-  >
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 3V15M12 15L7 10M12 15L17 10M5 21H19"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-
-    Export current page
-  </button>
-
-  <button
-  type="button"
-  className="export-all-button"
-  onClick={exportAllCollectedToCsv}
-  disabled={
-    repositories.length === 0 ||
-    isCollecting
-  }
-  title="Collect all available search results and export them as CSV"
->
-  {isCollecting ? (
-    <>
-      Collecting {collectionProgress}%
-    </>
-  ) : (
-    <>
-      Export all collected
-    </>
-  )}
-</button>
-</div>
-
+            <button
+              type="button"
+              className="export-all-button"
+              onClick={
+                exportAllCollectedToCsv
+              }
+              disabled={
+                repositories.length ===
+                  0 ||
+                isCollecting
+              }
+            >
+              {isCollecting
+                ? `Collecting ${collectionProgress}%`
+                : "Export all collected"}
+            </button>
+          </div>
         </div>
+
+        {isCollecting && (
+          <div className="collection-progress">
+            <div className="collection-progress-text">
+              <span>
+                Collecting repositories...
+              </span>
+
+              <strong>
+                {collectedCount}
+              </strong>
+            </div>
+
+            <div className="collection-progress-track">
+              <div
+                className="collection-progress-bar"
+                style={{
+                  width: `${collectionProgress}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {submittedQuery &&
           !isLoading &&
@@ -1084,8 +1050,10 @@ async function handlePerPageChange(
                   onChange={
                     handlePerPageChange
                   }
-                  disabled={isLoading}
-                  aria-label="Results per page"
+                  disabled={
+                    isLoading ||
+                    isCollecting
+                  }
                 >
                   {PER_PAGE_OPTIONS.map(
                     (option) => (
@@ -1106,37 +1074,6 @@ async function handlePerPageChange(
           totalCount >
             searchLimit && (
             <div className="search-limit-notice">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-
-                <path
-                  d="M12 8V12"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-
-                <circle
-                  cx="12"
-                  cy="16"
-                  r="1"
-                  fill="currentColor"
-                />
-              </svg>
-
               <span>
                 GitHub reports{" "}
                 <strong>
@@ -1144,15 +1081,15 @@ async function handlePerPageChange(
                     totalCount
                   )}
                 </strong>{" "}
-                matches, but this search
-                interface can page through
-                the first{" "}
+                matches, but this
+                interface can page
+                through the first{" "}
                 <strong>
                   {formatNumber(
                     searchLimit
                   )}
                 </strong>{" "}
-                results for this query.
+                results.
               </span>
             </div>
           )}
@@ -1197,16 +1134,13 @@ async function handlePerPageChange(
             </h3>
 
             <p>
-              Enter a keyword above to
-              search GitHub repositories.
+              Enter a keyword above
+              to search GitHub
+              repositories.
             </p>
           </div>
         ) : (
           <>
-            {/* =========================
-                TABLE
-            ========================= */}
-
             <div className="repository-table-wrapper">
               <table className="repository-table">
                 <thead>
@@ -1214,23 +1148,18 @@ async function handlePerPageChange(
                     <th>
                       Repository
                     </th>
-
                     <th>
                       Stars
                     </th>
-
                     <th>
                       Forks
                     </th>
-
                     <th>
                       Language
                     </th>
-
                     <th>
                       Issues
                     </th>
-
                     <th>
                       Status
                     </th>
@@ -1319,7 +1248,6 @@ async function handlePerPageChange(
                             <span className="metric-icon">
                               ★
                             </span>
-
                             {formatCompactNumber(
                               repository.stars
                             )}
@@ -1331,7 +1259,6 @@ async function handlePerPageChange(
                             <span className="metric-icon">
                               ⑂
                             </span>
-
                             {formatCompactNumber(
                               repository.forks
                             )}
@@ -1342,7 +1269,6 @@ async function handlePerPageChange(
                           {repository.language ? (
                             <span className="language">
                               <span className="language-dot" />
-
                               {
                                 repository.language
                               }
@@ -1380,9 +1306,153 @@ async function handlePerPageChange(
               </table>
             </div>
 
-            {/* =========================
-                PAGINATION
-            ========================= */}
+            <div className="repository-mobile-list">
+              {repositories.map(
+                (repository) => (
+                  <article
+                    className="repository-card"
+                    key={
+                      repository.id
+                    }
+                  >
+                    <div className="repository-card-header">
+                      <img
+                        src={
+                          repository
+                            .owner
+                            .avatarUrl
+                        }
+                        alt={`${repository.owner.login} avatar`}
+                        className="owner-avatar"
+                        width={44}
+                        height={44}
+                      />
+
+                      <div className="repository-card-title">
+                        <a
+                          href={
+                            repository.url
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="repository-name"
+                        >
+                          {
+                            repository.fullName
+                          }
+                        </a>
+
+                        <span className="repository-owner">
+                          @{repository.owner.login}
+                        </span>
+                      </div>
+                    </div>
+
+                    {repository.description && (
+                      <p className="repository-card-description">
+                        {
+                          repository.description
+                        }
+                      </p>
+                    )}
+
+                    <div className="repository-card-topics">
+                      {repository.topics
+                        .slice(
+                          0,
+                          6
+                        )
+                        .map(
+                          (topic) => (
+                            <span
+                              key={
+                                topic
+                              }
+                              className="topic-tag"
+                            >
+                              {topic}
+                            </span>
+                          )
+                        )}
+                    </div>
+
+                    <div className="repository-card-metrics">
+                      <div>
+                        <span>
+                          Stars
+                        </span>
+                        <strong>
+                          {formatCompactNumber(
+                            repository.stars
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Forks
+                        </span>
+                        <strong>
+                          {formatCompactNumber(
+                            repository.forks
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Issues
+                        </span>
+                        <strong>
+                          {formatCompactNumber(
+                            repository.openIssues
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Language
+                        </span>
+                        <strong>
+                          {repository.language ||
+                            "—"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="repository-card-footer">
+                      {repository.archived ? (
+                        <span className="archived-tag">
+                          Archived
+                        </span>
+                      ) : (
+                        <span className="active-tag">
+                          Active
+                        </span>
+                      )}
+
+                      {repository.fork && (
+                        <span className="status-tag">
+                          Fork
+                        </span>
+                      )}
+
+                      <a
+                        href={
+                          repository.url
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="repository-card-link"
+                      >
+                        View on GitHub →
+                      </a>
+                    </div>
+                  </article>
+                )
+              )}
+            </div>
 
             {totalPages > 1 && (
               <div className="pagination-container">
@@ -1396,7 +1466,9 @@ async function handlePerPageChange(
                   }
                   disabled={
                     isLoading ||
-                    currentPage === 1
+                    isCollecting ||
+                    currentPage ===
+                      1
                   }
                   aria-label="Previous page"
                 >
@@ -1439,7 +1511,8 @@ async function handlePerPageChange(
                             )
                           }
                           disabled={
-                            isLoading
+                            isLoading ||
+                            isCollecting
                           }
                           aria-current={
                             page ===
@@ -1465,6 +1538,7 @@ async function handlePerPageChange(
                   }
                   disabled={
                     isLoading ||
+                    isCollecting ||
                     currentPage ===
                       totalPages
                   }
@@ -1477,10 +1551,6 @@ async function handlePerPageChange(
                 </button>
               </div>
             )}
-
-            {/* =========================
-                JUMP TO PAGE
-            ========================= */}
 
             {totalPages > 7 && (
               <form
@@ -1505,13 +1575,17 @@ async function handlePerPageChange(
                   }
                   placeholder="Page"
                   aria-label="Page number"
-                  disabled={isLoading}
+                  disabled={
+                    isLoading ||
+                    isCollecting
+                  }
                 />
 
                 <button
                   type="submit"
                   disabled={
                     isLoading ||
+                    isCollecting ||
                     !jumpPage
                   }
                 >
@@ -1522,10 +1596,6 @@ async function handlePerPageChange(
           </>
         )}
       </section>
-
-      {/* =========================
-          FOOTER
-      ========================= */}
 
       <footer className="footer">
         <p>
