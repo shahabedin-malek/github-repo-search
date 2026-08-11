@@ -914,6 +914,12 @@ button:disabled {
     width: 100%;
   }
 
+  .empty-state,
+  .search-ready-state {
+    min-height: 280px;
+  }
+}
+
 @media (max-width: 700px) {
   .export-actions {
     width: 100%;
