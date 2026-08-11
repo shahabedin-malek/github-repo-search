@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GITHUB_API_URL = "https://api.github.com/search/repositories";
+const GITHUB_API_URL =
+  "https://api.github.com/search/repositories";
+
 const GITHUB_API_VERSION = "2026-03-10";
+
+// GitHub Search exposes a bounded searchable result window.
+// We keep this explicit in our application rather than
+// pretending total_count represents unlimited pageable results.
+const SEARCH_RESULT_LIMIT = 1000;
 
 interface GitHubRepository {
   id: number;
@@ -41,17 +48,26 @@ interface GitHubSearchResponse {
   items: GitHubRepository[];
 }
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+export async function GET(
+  request: NextRequest
+) {
+  const searchParams =
+    request.nextUrl.searchParams;
 
-  const query = searchParams.get("q")?.trim() || "";
-  const pageParam = searchParams.get("page") || "1";
-  const perPageParam = searchParams.get("per_page") || "30";
+  const query =
+    searchParams.get("q")?.trim() || "";
+
+  const pageParam =
+    searchParams.get("page") || "1";
+
+  const perPageParam =
+    searchParams.get("per_page") || "30";
 
   if (!query) {
     return NextResponse.json(
       {
-        error: "Search query is required.",
+        error:
+          "Search query is required.",
       },
       {
         status: 400,
@@ -59,8 +75,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const page = Number.parseInt(pageParam, 10);
-  const perPage = Number.parseInt(perPageParam, 10);
+  const page = Number.parseInt(
+    pageParam,
+    10
+  );
+
+  const perPage = Number.parseInt(
+    perPageParam,
+    10
+  );
 
   if (
     !Number.isInteger(page) ||
@@ -68,7 +91,8 @@ export async function GET(request: NextRequest) {
   ) {
     return NextResponse.json(
       {
-        error: "Page must be a positive integer.",
+        error:
+          "Page must be a positive integer.",
       },
       {
         status: 400,
@@ -83,7 +107,8 @@ export async function GET(request: NextRequest) {
   ) {
     return NextResponse.json(
       {
-        error: "per_page must be between 1 and 100.",
+        error:
+          "per_page must be between 1 and 100.",
       },
       {
         status: 400,
@@ -91,26 +116,93 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  try {
-    const githubUrl = new URL(GITHUB_API_URL);
+  /*
+   * Don't allow requests beyond our supported
+   * GitHub search result window.
+   */
+  const requestedStart =
+    (page - 1) * perPage;
 
-    githubUrl.searchParams.set("q", query);
-    githubUrl.searchParams.set("page", page.toString());
-    githubUrl.searchParams.set("per_page", perPage.toString());
-    githubUrl.searchParams.set("sort", "stars");
-    githubUrl.searchParams.set("order", "desc");
-
-    const response = await fetch(githubUrl.toString(), {
-      method: "GET",
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": GITHUB_API_VERSION,
-        "User-Agent": "github-repository-search-tool",
+  if (
+    requestedStart >= SEARCH_RESULT_LIMIT
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "This page is outside the available GitHub search result window.",
+        searchLimit:
+          SEARCH_RESULT_LIMIT,
       },
-      cache: "no-store",
-    });
+      {
+        status: 400,
+      }
+    );
+  }
 
-    const data = await response.json();
+  /*
+   * GitHub can only return up to the remaining
+   * number of results inside our supported window.
+   */
+  const remainingResults =
+    SEARCH_RESULT_LIMIT -
+    requestedStart;
+
+  const githubPerPage = Math.min(
+    perPage,
+    remainingResults
+  );
+
+  try {
+    const githubUrl = new URL(
+      GITHUB_API_URL
+    );
+
+    githubUrl.searchParams.set(
+      "q",
+      query
+    );
+
+    githubUrl.searchParams.set(
+      "page",
+      page.toString()
+    );
+
+    githubUrl.searchParams.set(
+      "per_page",
+      githubPerPage.toString()
+    );
+
+    githubUrl.searchParams.set(
+      "sort",
+      "stars"
+    );
+
+    githubUrl.searchParams.set(
+      "order",
+      "desc"
+    );
+
+    const response = await fetch(
+      githubUrl.toString(),
+      {
+        method: "GET",
+        headers: {
+          Accept:
+            "application/vnd.github+json",
+
+          "X-GitHub-Api-Version":
+            GITHUB_API_VERSION,
+
+          "User-Agent":
+            "github-repository-search-tool",
+        },
+
+        cache: "no-store",
+      }
+    );
+
+    const data =
+      await response.json();
 
     if (!response.ok) {
       console.error(
@@ -119,7 +211,9 @@ export async function GET(request: NextRequest) {
         data
       );
 
-      if (response.status === 422) {
+      if (
+        response.status === 422
+      ) {
         return NextResponse.json(
           {
             error:
@@ -131,7 +225,9 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (response.status === 403) {
+      if (
+        response.status === 403
+      ) {
         return NextResponse.json(
           {
             error:
@@ -150,7 +246,8 @@ export async function GET(request: NextRequest) {
             "GitHub API request failed.",
         },
         {
-          status: response.status,
+          status:
+            response.status,
         }
       );
     }
@@ -158,49 +255,149 @@ export async function GET(request: NextRequest) {
     const githubData =
       data as GitHubSearchResponse;
 
-    const repositories = githubData.items.map(
-      (repository) => ({
-        id: repository.id,
-        name: repository.name,
-        fullName: repository.full_name,
-        url: repository.html_url,
-        description: repository.description,
-        private: repository.private,
-        fork: repository.fork,
-        archived: repository.archived,
-        language: repository.language,
-        stars: repository.stargazers_count,
-        watchers: repository.watchers_count,
-        forks: repository.forks_count,
-        openIssues: repository.open_issues_count,
-        topics: repository.topics,
-        defaultBranch: repository.default_branch,
-        createdAt: repository.created_at,
-        updatedAt: repository.updated_at,
-        pushedAt: repository.pushed_at,
-        homepage: repository.homepage,
-        license: repository.license
-          ? {
-              key: repository.license.key,
-              name: repository.license.name,
-              spdxId: repository.license.spdx_id,
-            }
-          : null,
-        owner: {
-          login: repository.owner.login,
-          avatarUrl: repository.owner.avatar_url,
-          url: repository.owner.html_url,
-        },
-      })
-    );
+    const repositories =
+      githubData.items.map(
+        (repository) => ({
+          id: repository.id,
+
+          name: repository.name,
+
+          fullName:
+            repository.full_name,
+
+          url:
+            repository.html_url,
+
+          description:
+            repository.description,
+
+          private:
+            repository.private,
+
+          fork:
+            repository.fork,
+
+          archived:
+            repository.archived,
+
+          language:
+            repository.language,
+
+          stars:
+            repository.stargazers_count,
+
+          watchers:
+            repository.watchers_count,
+
+          forks:
+            repository.forks_count,
+
+          openIssues:
+            repository.open_issues_count,
+
+          topics:
+            repository.topics,
+
+          defaultBranch:
+            repository.default_branch,
+
+          createdAt:
+            repository.created_at,
+
+          updatedAt:
+            repository.updated_at,
+
+          pushedAt:
+            repository.pushed_at,
+
+          homepage:
+            repository.homepage,
+
+          license:
+            repository.license
+              ? {
+                  key:
+                    repository
+                      .license
+                      .key,
+
+                  name:
+                    repository
+                      .license
+                      .name,
+
+                  spdxId:
+                    repository
+                      .license
+                      .spdx_id,
+                }
+              : null,
+
+          owner: {
+            login:
+              repository.owner
+                .login,
+
+            avatarUrl:
+              repository.owner
+                .avatar_url,
+
+            url:
+              repository.owner
+                .html_url,
+          },
+        })
+      );
+
+    const availableResults =
+      Math.min(
+        githubData.total_count,
+        SEARCH_RESULT_LIMIT
+      );
+
+    const totalPages =
+      Math.ceil(
+        availableResults /
+          perPage
+      );
+
+    const currentStart =
+      requestedStart + 1;
+
+    const currentEnd =
+      Math.min(
+        requestedStart +
+          repositories.length,
+        availableResults
+      );
 
     return NextResponse.json({
       query,
+
       page,
+
       perPage,
-      totalCount: githubData.total_count,
+
+      totalCount:
+        githubData.total_count,
+
+      availableResults,
+
+      searchLimit:
+        SEARCH_RESULT_LIMIT,
+
+      totalPages,
+
+      currentStart:
+        repositories.length > 0
+          ? currentStart
+          : 0,
+
+      currentEnd,
+
       incompleteResults:
         githubData.incomplete_results,
+
       repositories,
     });
   } catch (error) {

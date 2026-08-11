@@ -528,6 +528,202 @@ button:disabled {
 }
 
 /* =========================
+   PAGINATION SUMMARY
+========================= */
+
+.pagination-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.pagination-summary strong {
+  color: #4b5563;
+  font-weight: 700;
+}
+
+.per-page-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.per-page-control select {
+  height: 34px;
+  padding: 0 30px 0 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  outline: none;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.per-page-control select:focus {
+  border-color: #9ca3af;
+}
+
+/* =========================
+   SEARCH LIMIT NOTICE
+========================= */
+
+.search-limit-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #fafafa;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.search-limit-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #9ca3af;
+}
+
+.search-limit-notice strong {
+  color: #4b5563;
+}
+
+/* =========================
+   PAGINATION
+========================= */
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pagination-page,
+.pagination-arrow {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pagination-page {
+  width: 36px;
+}
+
+.pagination-arrow {
+  gap: 7px;
+  padding: 0 12px;
+}
+
+.pagination-page:hover:not(:disabled),
+.pagination-arrow:hover:not(:disabled) {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.pagination-page.active {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.pagination-page:disabled,
+.pagination-arrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  width: 25px;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+/* =========================
+   JUMP TO PAGE
+========================= */
+
+.jump-page-form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.jump-page-form input {
+  width: 70px;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  outline: none;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  text-align: center;
+}
+
+.jump-page-form input:focus {
+  border-color: #9ca3af;
+}
+
+.jump-page-form button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jump-page-form button:hover:not(:disabled) {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.jump-page-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* =========================
    TOPICS
 ========================= */
 
@@ -651,6 +847,39 @@ button:disabled {
    MOBILE
 ========================= */
 
+@media (max-width: 700px) {
+  .pagination-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pagination-container {
+    gap: 5px;
+  }
+
+  .pagination-pages {
+    gap: 3px;
+  }
+
+  .pagination-page {
+    width: 32px;
+    height: 34px;
+  }
+
+  .pagination-arrow {
+    width: 34px;
+    padding: 0;
+  }
+
+  .pagination-arrow span {
+    display: none;
+  }
+
+  .jump-page-form {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 640px) {
   .hero {
     padding: 70px 18px 50px;
@@ -685,8 +914,125 @@ button:disabled {
     width: 100%;
   }
 
+@media (max-width: 700px) {
+  .export-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .export-button,
+  .export-all-button {
+    width: 100%;
+  }
+}
+
+/* =========================
+   EXPORT ACTIONS
+========================= */
+
+.export-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid #111827;
+  border-radius: 9px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.export-button:hover:not(:disabled) {
+  border-color: #000000;
+  background: #000000;
+}
+
+.export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.export-all-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.export-all-button span {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 600;
+}
+
   .empty-state,
   .search-ready-state {
     min-height: 280px;
   }
+}
+
+/* =========================
+   COLLECTION PROGRESS
+========================= */
+
+.collection-progress {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.collection-progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.collection-progress-text strong {
+  color: #111827;
+}
+
+.collection-progress-track {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.collection-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: #111827;
+  transition: width 0.2s ease;
 }
