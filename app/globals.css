@@ -996,12 +996,6 @@ button:disabled {
   font-weight: 600;
 }
 
-  .empty-state,
-  .search-ready-state {
-    min-height: 280px;
-  }
-}
-
 /* =========================
    COLLECTION PROGRESS
 ========================= */
