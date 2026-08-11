@@ -419,6 +419,213 @@ button:disabled {
   color: #111827;
 }
 
+/* =========================
+   REPOSITORY TABLE
+========================= */
+
+.repository-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.repository-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.repository-table th {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.repository-table td {
+  padding: 18px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.repository-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.repository-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.repository-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* =========================
+   REPOSITORY INFORMATION
+========================= */
+
+.repository-main-cell {
+  width: 48%;
+  min-width: 460px;
+}
+
+.repository-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.owner-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 9px;
+  background: #f3f4f6;
+  object-fit: cover;
+}
+
+.repository-content {
+  min-width: 0;
+}
+
+.repository-name {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repository-name:hover {
+  text-decoration: underline;
+}
+
+.repository-description {
+  max-width: 620px;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* =========================
+   TOPICS
+========================= */
+
+.repository-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.topic-tag,
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-tag {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* =========================
+   METRICS
+========================= */
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.metric-icon {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.issues-count {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* =========================
+   LANGUAGE
+========================= */
+
+.language {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.language-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.active-tag,
+.archived-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.active-tag {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.archived-tag {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.muted {
+  color: #9ca3af;
+}
+
 .phase-note {
   display: inline-block;
   margin-top: 14px;

@@ -47,11 +47,15 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [repositories, setRepositories] = useState<Repository[]>(
-    []
-  );
+
+  const [repositories, setRepositories] = useState<
+    Repository[]
+  >([]);
+
   const [totalCount, setTotalCount] = useState(0);
-  const [submittedQuery, setSubmittedQuery] = useState("");
+
+  const [submittedQuery, setSubmittedQuery] =
+    useState("");
 
   async function handleSearch(
     event: FormEvent<HTMLFormElement>
@@ -63,7 +67,9 @@ export default function Home() {
     setError("");
 
     if (!trimmedQuery) {
-      setError("Please enter a search keyword.");
+      setError(
+        "Please enter a search keyword."
+      );
       return;
     }
 
@@ -133,6 +139,18 @@ export default function Home() {
     ).format(number);
   }
 
+  function formatCompactNumber(
+    number: number
+  ) {
+    return new Intl.NumberFormat(
+      "en-US",
+      {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }
+    ).format(number);
+  }
+
   return (
     <main className="app-shell">
       {/* =========================
@@ -175,11 +193,11 @@ export default function Home() {
               aria-hidden="true"
             >
               <path
-  d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
-  stroke="currentColor"
-  strokeWidth="2"
-  strokeLinecap="round"
-/>
+                d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
 
             <input
@@ -273,9 +291,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() =>
-              handleExampleSearch(
-                "ai agent"
-              )
+              handleExampleSearch("ai agent")
             }
             disabled={isLoading}
           >
@@ -285,9 +301,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() =>
-              handleExampleSearch(
-                "nextjs"
-              )
+              handleExampleSearch("nextjs")
             }
             disabled={isLoading}
           >
@@ -297,9 +311,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() =>
-              handleExampleSearch(
-                "python"
-              )
+              handleExampleSearch("python")
             }
             disabled={isLoading}
           >
@@ -396,49 +408,189 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="search-ready-state">
-            <div className="search-ready-icon">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="7"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
+          <div className="repository-table-wrapper">
+            <table className="repository-table">
+              <thead>
+                <tr>
+                  <th>
+                    Repository
+                  </th>
 
-                <path
-                  d="M16.5 16.5L21 21"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
+                  <th>
+                    Stars
+                  </th>
 
-            <h3>
-              GitHub search connected
-            </h3>
+                  <th>
+                    Forks
+                  </th>
 
-            <p>
-              Successfully received{" "}
-              <strong>
-                {repositories.length}
-              </strong>{" "}
-              repositories.
-            </p>
+                  <th>
+                    Language
+                  </th>
 
-            <span className="phase-note">
-              Results table is coming in
-              Phase 4.
-            </span>
+                  <th>
+                    Issues
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {repositories.map(
+                  (repository) => (
+                    <tr
+                      key={
+                        repository.id
+                      }
+                    >
+                      {/* Repository */}
+
+                      <td className="repository-main-cell">
+                        <div className="repository-info">
+                          <img
+                            src={
+                              repository
+                                .owner
+                                .avatarUrl
+                            }
+                            alt={`${repository.owner.login} avatar`}
+                            className="owner-avatar"
+                            width={40}
+                            height={40}
+                          />
+
+                          <div className="repository-content">
+                            <a
+                              href={
+                                repository.url
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="repository-name"
+                            >
+                              {
+                                repository.fullName
+                              }
+                            </a>
+
+                            {repository.description && (
+                              <p className="repository-description">
+                                {
+                                  repository.description
+                                }
+                              </p>
+                            )}
+
+                            <div className="repository-meta">
+                              {repository.topics
+                                .slice(
+                                  0,
+                                  5
+                                )
+                                .map(
+                                  (
+                                    topic
+                                  ) => (
+                                    <span
+                                      key={
+                                        topic
+                                      }
+                                      className="topic-tag"
+                                    >
+                                      {
+                                        topic
+                                      }
+                                    </span>
+                                  )
+                                )}
+
+                              {repository.fork && (
+                                <span className="status-tag">
+                                  Fork
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Stars */}
+
+                      <td>
+                        <span className="metric">
+                          <span className="metric-icon">
+                            ★
+                          </span>
+
+                          {formatCompactNumber(
+                            repository.stars
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Forks */}
+
+                      <td>
+                        <span className="metric">
+                          <span className="metric-icon">
+                            ⑂
+                          </span>
+
+                          {formatCompactNumber(
+                            repository.forks
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Language */}
+
+                      <td>
+                        {repository.language ? (
+                          <span className="language">
+                            <span className="language-dot" />
+
+                            {
+                              repository.language
+                            }
+                          </span>
+                        ) : (
+                          <span className="muted">
+                            —
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Issues */}
+
+                      <td>
+                        <span className="issues-count">
+                          {formatCompactNumber(
+                            repository.openIssues
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+
+                      <td>
+                        {repository.archived ? (
+                          <span className="archived-tag">
+                            Archived
+                          </span>
+                        ) : (
+                          <span className="active-tag">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
