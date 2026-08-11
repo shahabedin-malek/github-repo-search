@@ -2,13 +2,60 @@
 
 import { FormEvent, useState } from "react";
 
+interface Repository {
+  id: number;
+  name: string;
+  fullName: string;
+  url: string;
+  description: string | null;
+  private: boolean;
+  fork: boolean;
+  archived: boolean;
+  language: string | null;
+  stars: number;
+  watchers: number;
+  forks: number;
+  openIssues: number;
+  topics: string[];
+  defaultBranch: string;
+  createdAt: string;
+  updatedAt: string;
+  pushedAt: string | null;
+  homepage: string | null;
+  license: {
+    key: string;
+    name: string;
+    spdxId: string | null;
+  } | null;
+  owner: {
+    login: string;
+    avatarUrl: string;
+    url: string;
+  };
+}
+
+interface SearchResponse {
+  query: string;
+  page: number;
+  perPage: number;
+  totalCount: number;
+  incompleteResults: boolean;
+  repositories: Repository[];
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [repositories, setRepositories] = useState<Repository[]>(
+    []
+  );
+  const [totalCount, setTotalCount] = useState(0);
   const [submittedQuery, setSubmittedQuery] = useState("");
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+  async function handleSearch(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     const trimmedQuery = query.trim();
@@ -22,17 +69,68 @@ export default function Home() {
 
     setIsLoading(true);
 
-    // GitHub API will be connected in Phase 3.
-    // This small delay gives us a real loading state to work with.
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const response = await fetch(
+        `/api/github/search?q=${encodeURIComponent(
+          trimmedQuery
+        )}&page=1&per_page=30`
+      );
 
-    setSubmittedQuery(trimmedQuery);
-    setIsLoading(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Unable to search GitHub."
+        );
+      }
+
+      const searchData =
+        data as SearchResponse;
+
+      setRepositories(
+        searchData.repositories
+      );
+
+      setTotalCount(
+        searchData.totalCount
+      );
+
+      setSubmittedQuery(
+        searchData.query
+      );
+    } catch (searchError) {
+      console.error(
+        "Search failed:",
+        searchError
+      );
+
+      setRepositories([]);
+      setTotalCount(0);
+
+      setError(
+        searchError instanceof Error
+          ? searchError.message
+          : "Something went wrong while searching GitHub."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  function handleExampleSearch(example: string) {
+  function handleExampleSearch(
+    example: string
+  ) {
     setQuery(example);
     setError("");
+  }
+
+  function formatNumber(
+    number: number
+  ) {
+    return new Intl.NumberFormat(
+      "en-US"
+    ).format(number);
   }
 
   return (
@@ -52,8 +150,9 @@ export default function Home() {
         </h1>
 
         <p className="hero-description">
-          Search GitHub repositories by keyword and export the results
-          for further research and analysis.
+          Search GitHub repositories by keyword
+          and explore the results for further
+          research and analysis.
         </p>
 
         {/* =========================
@@ -76,11 +175,11 @@ export default function Home() {
               aria-hidden="true"
             >
               <path
-                d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
+  d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
+  stroke="currentColor"
+  strokeWidth="2"
+  strokeLinecap="round"
+/>
             </svg>
 
             <input
@@ -93,7 +192,11 @@ export default function Home() {
               placeholder="Search repositories..."
               aria-label="Search GitHub repositories"
               aria-invalid={Boolean(error)}
-              aria-describedby={error ? "search-error" : undefined}
+              aria-describedby={
+                error
+                  ? "search-error"
+                  : undefined
+              }
               disabled={isLoading}
               autoComplete="off"
             />
@@ -161,7 +264,7 @@ export default function Home() {
         )}
 
         {/* =========================
-            EXAMPLE SEARCHES
+            EXAMPLES
         ========================= */}
 
         <div className="example-searches">
@@ -169,7 +272,11 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => handleExampleSearch("ai agent")}
+            onClick={() =>
+              handleExampleSearch(
+                "ai agent"
+              )
+            }
             disabled={isLoading}
           >
             ai agent
@@ -177,7 +284,11 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => handleExampleSearch("nextjs")}
+            onClick={() =>
+              handleExampleSearch(
+                "nextjs"
+              )
+            }
             disabled={isLoading}
           >
             nextjs
@@ -185,7 +296,11 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => handleExampleSearch("python")}
+            onClick={() =>
+              handleExampleSearch(
+                "python"
+              )
+            }
             disabled={isLoading}
           >
             python
@@ -193,7 +308,11 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => handleExampleSearch("web scraper")}
+            onClick={() =>
+              handleExampleSearch(
+                "web scraper"
+              )
+            }
             disabled={isLoading}
           >
             web scraper
@@ -208,11 +327,15 @@ export default function Home() {
       <section className="results-section">
         <div className="section-header">
           <div>
-            <h2>Repository results</h2>
+            <h2>
+              Repository results
+            </h2>
 
             <p>
               {submittedQuery
-                ? `Search prepared for "${submittedQuery}"`
+                ? `${formatNumber(
+                    totalCount
+                  )} repositories found for "${submittedQuery}"`
                 : "Search results will appear here."}
             </p>
           </div>
@@ -220,13 +343,29 @@ export default function Home() {
           <button
             type="button"
             className="export-button"
-            disabled
+            disabled={
+              repositories.length === 0
+            }
           >
             Export CSV
           </button>
         </div>
 
-        {!submittedQuery ? (
+        {isLoading ? (
+          <div className="loading-state">
+            <span className="large-spinner" />
+
+            <h3>
+              Searching GitHub...
+            </h3>
+
+            <p>
+              Finding repositories matching
+              your search.
+            </p>
+          </div>
+        ) : repositories.length ===
+          0 ? (
           <div className="empty-state">
             <div className="empty-icon">
               <svg
@@ -247,10 +386,13 @@ export default function Home() {
               </svg>
             </div>
 
-            <h3>No repositories yet</h3>
+            <h3>
+              No repositories yet
+            </h3>
 
             <p>
-              Enter a keyword above to search GitHub repositories.
+              Enter a keyword above to
+              search GitHub repositories.
             </p>
           </div>
         ) : (
@@ -282,17 +424,20 @@ export default function Home() {
             </div>
 
             <h3>
-              Ready to search GitHub
+              GitHub search connected
             </h3>
 
             <p>
-              Your search for{" "}
-              <strong>&quot;{submittedQuery}&quot;</strong>{" "}
-              is ready.
+              Successfully received{" "}
+              <strong>
+                {repositories.length}
+              </strong>{" "}
+              repositories.
             </p>
 
             <span className="phase-note">
-              GitHub API integration is coming in Phase 3.
+              Results table is coming in
+              Phase 4.
             </span>
           </div>
         )}
@@ -304,7 +449,8 @@ export default function Home() {
 
       <footer className="footer">
         <p>
-          GitHub Repository Search Tool · v0.1
+          GitHub Repository Search Tool ·
+          v0.1
         </p>
       </footer>
     </main>
