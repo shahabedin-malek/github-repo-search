@@ -554,7 +554,7 @@ async function exportAllCollectedToCsv() {
       setError(
         searchError instanceof Error
           ? searchError.message
-          : "Something went wrong while searching GitHub."
+          : "GitHub API rate limit reached."
       );
     } finally {
       setIsLoading(false);

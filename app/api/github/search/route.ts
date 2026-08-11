@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 const GITHUB_API_URL =
   "https://api.github.com/search/repositories";
 
-const GITHUB_API_VERSION = "2026-03-10";
+const GITHUB_API_VERSION =
+  "2026-03-10";
 
-// GitHub Search exposes a bounded searchable result window.
-// We keep this explicit in our application rather than
-// pretending total_count represents unlimited pageable results.
 const SEARCH_RESULT_LIMIT = 1000;
 
 interface GitHubRepository {
@@ -48,6 +49,56 @@ interface GitHubSearchResponse {
   items: GitHubRepository[];
 }
 
+function getResetTime(
+  response: Response
+): number | null {
+  const resetHeader =
+    response.headers.get(
+      "x-ratelimit-reset"
+    );
+
+  if (!resetHeader) {
+    return null;
+  }
+
+  const resetTimestamp =
+    Number(resetHeader);
+
+  if (
+    !Number.isFinite(
+      resetTimestamp
+    )
+  ) {
+    return null;
+  }
+
+  return resetTimestamp;
+}
+
+function getRemainingRateLimit(
+  response: Response
+): number | null {
+  const remainingHeader =
+    response.headers.get(
+      "x-ratelimit-remaining"
+    );
+
+  if (!remainingHeader) {
+    return null;
+  }
+
+  const remaining =
+    Number(remainingHeader);
+
+  if (
+    !Number.isFinite(remaining)
+  ) {
+    return null;
+  }
+
+  return remaining;
+}
+
 export async function GET(
   request: NextRequest
 ) {
@@ -55,13 +106,17 @@ export async function GET(
     request.nextUrl.searchParams;
 
   const query =
-    searchParams.get("q")?.trim() || "";
+    searchParams
+      .get("q")
+      ?.trim() || "";
 
   const pageParam =
     searchParams.get("page") || "1";
 
   const perPageParam =
-    searchParams.get("per_page") || "30";
+    searchParams.get(
+      "per_page"
+    ) || "30";
 
   if (!query) {
     return NextResponse.json(
@@ -75,15 +130,17 @@ export async function GET(
     );
   }
 
-  const page = Number.parseInt(
-    pageParam,
-    10
-  );
+  const page =
+    Number.parseInt(
+      pageParam,
+      10
+    );
 
-  const perPage = Number.parseInt(
-    perPageParam,
-    10
-  );
+  const perPage =
+    Number.parseInt(
+      perPageParam,
+      10
+    );
 
   if (
     !Number.isInteger(page) ||
@@ -116,20 +173,18 @@ export async function GET(
     );
   }
 
-  /*
-   * Don't allow requests beyond our supported
-   * GitHub search result window.
-   */
   const requestedStart =
     (page - 1) * perPage;
 
   if (
-    requestedStart >= SEARCH_RESULT_LIMIT
+    requestedStart >=
+    SEARCH_RESULT_LIMIT
   ) {
     return NextResponse.json(
       {
         error:
           "This page is outside the available GitHub search result window.",
+
         searchLimit:
           SEARCH_RESULT_LIMIT,
       },
@@ -139,23 +194,50 @@ export async function GET(
     );
   }
 
-  /*
-   * GitHub can only return up to the remaining
-   * number of results inside our supported window.
-   */
   const remainingResults =
     SEARCH_RESULT_LIMIT -
     requestedStart;
 
-  const githubPerPage = Math.min(
-    perPage,
-    remainingResults
-  );
+  const githubPerPage =
+    Math.min(
+      perPage,
+      remainingResults
+    );
+
+  /*
+   * The token is read ONLY on the server.
+   *
+   * Never expose this value through:
+   *
+   * NEXT_PUBLIC_GITHUB_TOKEN
+   *
+   * because NEXT_PUBLIC_* values can
+   * become available to browser code.
+   */
+  const githubToken =
+    process.env.GITHUB_TOKEN;
+
+  if (!githubToken) {
+    console.error(
+      "GITHUB_TOKEN is not configured."
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "GitHub token is not configured. Add GITHUB_TOKEN to .env.local and restart the development server.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 
   try {
-    const githubUrl = new URL(
-      GITHUB_API_URL
-    );
+    const githubUrl =
+      new URL(
+        GITHUB_API_URL
+      );
 
     githubUrl.searchParams.set(
       "q",
@@ -182,27 +264,143 @@ export async function GET(
       "desc"
     );
 
-    const response = await fetch(
-      githubUrl.toString(),
-      {
-        method: "GET",
-        headers: {
-          Accept:
-            "application/vnd.github+json",
+    const response =
+      await fetch(
+        githubUrl.toString(),
+        {
+          method: "GET",
 
-          "X-GitHub-Api-Version":
-            GITHUB_API_VERSION,
+          headers: {
+            Accept:
+              "application/vnd.github+json",
 
-          "User-Agent":
-            "github-repository-search-tool",
-        },
+            Authorization:
+              `Bearer ${githubToken}`,
 
-        cache: "no-store",
-      }
-    );
+            "X-GitHub-Api-Version":
+              GITHUB_API_VERSION,
+
+            "User-Agent":
+              "github-repository-search-tool",
+          },
+
+          cache: "no-store",
+        }
+      );
 
     const data =
       await response.json();
+
+    const remaining =
+      getRemainingRateLimit(
+        response
+      );
+
+    const reset =
+      getResetTime(
+        response
+      );
+
+    /*
+     * Rate limit
+     */
+
+    if (
+      response.status === 403 ||
+      response.status === 429
+    ) {
+      const rateLimitRemaining =
+        response.headers.get(
+          "x-ratelimit-remaining"
+        );
+
+      const retryAfter =
+        response.headers.get(
+          "retry-after"
+        );
+
+      if (
+        rateLimitRemaining ===
+          "0" ||
+        response.status === 429
+      ) {
+        let message =
+          "GitHub API rate limit reached.";
+
+        if (reset) {
+          const resetDate =
+            new Date(
+              reset * 1000
+            );
+
+          message += ` Try again after ${resetDate.toLocaleTimeString()}.`;
+        } else if (
+          retryAfter
+        ) {
+          const seconds =
+            Number(
+              retryAfter
+            );
+
+          if (
+            Number.isFinite(
+              seconds
+            )
+          ) {
+            message += ` Try again in approximately ${Math.ceil(
+              seconds / 60
+            )} minute(s).`;
+          }
+        }
+
+        return NextResponse.json(
+          {
+            error: message,
+
+            rateLimit: {
+              remaining,
+              reset,
+            },
+          },
+          {
+            status: 429,
+          }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            data?.message ||
+            "GitHub rejected the request.",
+        },
+        {
+          status: response.status,
+        }
+      );
+    }
+
+    /*
+     * Authentication failure
+     */
+
+    if (
+      response.status === 401
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "GitHub authentication failed. Check that GITHUB_TOKEN is valid.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    /*
+     * Other GitHub errors
+     */
 
     if (!response.ok) {
       console.error(
@@ -221,20 +419,6 @@ export async function GET(
           },
           {
             status: 422,
-          }
-        );
-      }
-
-      if (
-        response.status === 403
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "GitHub API rate limit reached. Please try again later.",
-          },
-          {
-            status: 429,
           }
         );
       }
@@ -260,7 +444,8 @@ export async function GET(
         (repository) => ({
           id: repository.id,
 
-          name: repository.name,
+          name:
+            repository.name,
 
           fullName:
             repository.full_name,
@@ -399,6 +584,11 @@ export async function GET(
         githubData.incomplete_results,
 
       repositories,
+
+      rateLimit: {
+        remaining,
+        reset,
+      },
     });
   } catch (error) {
     console.error(
