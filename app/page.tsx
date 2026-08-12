@@ -58,6 +58,154 @@ const PER_PAGE_OPTIONS = [
   100,
 ];
 
+interface SearchFilters {
+  language: string;
+  minStars: string;
+  minForks: string;
+  topic: string;
+  owner: string;
+  organization: string;
+  archived: "" | "true" | "false";
+  forks: "" | "true" | "only";
+  createdAfter: string;
+  updatedAfter: string;
+  pushedAfter: string;
+  license: string;
+}
+
+const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+  language: "",
+  minStars: "",
+  minForks: "",
+  topic: "",
+  owner: "",
+  organization: "",
+  archived: "",
+  forks: "",
+  createdAfter: "",
+  updatedAfter: "",
+  pushedAfter: "",
+  license: "",
+};
+
+const LANGUAGE_OPTIONS = [
+  "Python",
+  "JavaScript",
+  "TypeScript",
+  "Java",
+  "Go",
+  "Rust",
+  "C++",
+  "C#",
+  "Ruby",
+  "PHP",
+  "Swift",
+  "Kotlin",
+  "Dart",
+  "Shell",
+  "HTML",
+  "CSS",
+];
+
+const LICENSE_OPTIONS = [
+  { value: "mit", label: "MIT" },
+  { value: "apache-2.0", label: "Apache 2.0" },
+  { value: "gpl-3.0", label: "GPL 3.0" },
+  { value: "gpl-2.0", label: "GPL 2.0" },
+  { value: "bsd-2-clause", label: "BSD 2-Clause" },
+  { value: "bsd-3-clause", label: "BSD 3-Clause" },
+  { value: "isc", label: "ISC" },
+  { value: "mpl-2.0", label: "MPL 2.0" },
+];
+
+function normalizeQualifierValue(value: string): string {
+  return value
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._+\-]/g, "");
+}
+
+function buildSearchQuery(
+  keyword: string,
+  filters: SearchFilters
+): string {
+  const qualifiers: string[] = [];
+
+  if (filters.language.trim()) {
+    qualifiers.push(
+      `language:${filters.language.trim().replace(/\s+/g, "-")}`
+    );
+  }
+
+  if (filters.minStars.trim()) {
+    qualifiers.push(`stars:>=${filters.minStars.trim()}`);
+  }
+
+  if (filters.minForks.trim()) {
+    qualifiers.push(`forks:>=${filters.minForks.trim()}`);
+  }
+
+  if (filters.topic.trim()) {
+    filters.topic
+      .split(",")
+      .map(normalizeQualifierValue)
+      .filter(Boolean)
+      .forEach((topic) => qualifiers.push(`topic:${topic}`));
+  }
+
+  if (filters.owner.trim()) {
+    qualifiers.push(
+      `user:${normalizeQualifierValue(filters.owner)}`
+    );
+  }
+
+  if (filters.organization.trim()) {
+    qualifiers.push(
+      `org:${normalizeQualifierValue(filters.organization)}`
+    );
+  }
+
+  if (filters.archived) {
+    qualifiers.push(`archived:${filters.archived}`);
+  }
+
+  if (filters.forks) {
+    qualifiers.push(
+      filters.forks === "only"
+        ? "fork:only"
+        : `fork:${filters.forks}`
+    );
+  }
+
+  if (filters.createdAfter) {
+    qualifiers.push(`created:>=${filters.createdAfter}`);
+  }
+
+  if (filters.updatedAfter) {
+    qualifiers.push(`updated:>=${filters.updatedAfter}`);
+  }
+
+  if (filters.pushedAfter) {
+    qualifiers.push(`pushed:>=${filters.pushedAfter}`);
+  }
+
+  if (filters.license) {
+    qualifiers.push(`license:${filters.license}`);
+  }
+
+  return [keyword.trim(), ...qualifiers]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function countActiveFilters(
+  filters: SearchFilters
+): number {
+  return Object.values(filters).filter(
+    (value) => value.trim() !== ""
+  ).length;
+}
+
 function escapeCsvValue(
   value: unknown
 ): string {
@@ -79,6 +227,11 @@ function escapeCsvValue(
 export default function Home() {
   const [query, setQuery] =
     useState("");
+
+  const [filters, setFilters] =
+    useState<SearchFilters>(
+      DEFAULT_SEARCH_FILTERS
+    );
 
   const [isLoading, setIsLoading] =
     useState(false);
@@ -259,8 +412,13 @@ export default function Home() {
       return;
     }
 
-    await searchRepositories(
+    const searchQuery = buildSearchQuery(
       trimmedQuery,
+      filters
+    );
+
+    await searchRepositories(
+      searchQuery,
       1,
       perPage
     );
@@ -357,6 +515,22 @@ export default function Home() {
     example: string
   ) {
     setQuery(example);
+    setError("");
+  }
+
+  function updateFilter<K extends keyof SearchFilters>(
+    key: K,
+    value: SearchFilters[K]
+  ) {
+    setFilters((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    setError("");
+  }
+
+  function clearFilters() {
+    setFilters({ ...DEFAULT_SEARCH_FILTERS });
     setError("");
   }
 
@@ -869,6 +1043,249 @@ export default function Home() {
             )}
           </button>
         </form>
+
+        <section
+          className="advanced-filters"
+          aria-label="Advanced search filters"
+        >
+          <div className="advanced-filters-header">
+            <div>
+              <h2>Advanced filters</h2>
+              <p>
+                Narrow the GitHub repository search before collecting results.
+              </p>
+            </div>
+
+            {countActiveFilters(filters) > 0 && (
+              <button
+                type="button"
+                className="clear-filters-button"
+                onClick={clearFilters}
+                disabled={isLoading || isCollecting}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          <div className="advanced-filters-grid">
+            <label className="filter-field">
+              <span>Language</span>
+              <select
+                value={filters.language}
+                onChange={(event) =>
+                  updateFilter(
+                    "language",
+                    event.target.value
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              >
+                <option value="">Any language</option>
+                {LANGUAGE_OPTIONS.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="filter-field">
+              <span>Minimum stars</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={filters.minStars}
+                onChange={(event) =>
+                  updateFilter(
+                    "minStars",
+                    event.target.value
+                  )
+                }
+                placeholder="Any"
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Minimum forks</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={filters.minForks}
+                onChange={(event) =>
+                  updateFilter(
+                    "minForks",
+                    event.target.value
+                  )
+                }
+                placeholder="Any"
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Topic</span>
+              <input
+                type="text"
+                value={filters.topic}
+                onChange={(event) =>
+                  updateFilter(
+                    "topic",
+                    event.target.value
+                  )
+                }
+                placeholder="ai, agents"
+                disabled={isLoading || isCollecting}
+              />
+              <small>Comma-separated topics</small>
+            </label>
+
+            <label className="filter-field">
+              <span>Owner</span>
+              <input
+                type="text"
+                value={filters.owner}
+                onChange={(event) =>
+                  updateFilter(
+                    "owner",
+                    event.target.value
+                  )
+                }
+                placeholder="octocat"
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Organization</span>
+              <input
+                type="text"
+                value={filters.organization}
+                onChange={(event) =>
+                  updateFilter(
+                    "organization",
+                    event.target.value
+                  )
+                }
+                placeholder="github"
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Archived</span>
+              <select
+                value={filters.archived}
+                onChange={(event) =>
+                  updateFilter(
+                    "archived",
+                    event.target.value as SearchFilters["archived"]
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              >
+                <option value="">Any</option>
+                <option value="false">Exclude archived</option>
+                <option value="true">Archived only</option>
+              </select>
+            </label>
+
+            <label className="filter-field">
+              <span>Forks</span>
+              <select
+                value={filters.forks}
+                onChange={(event) =>
+                  updateFilter(
+                    "forks",
+                    event.target.value as SearchFilters["forks"]
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              >
+                <option value="">Any</option>
+                <option value="false">Exclude forks</option>
+                <option value="true">Include forks</option>
+                <option value="only">Forks only</option>
+              </select>
+            </label>
+
+            <label className="filter-field">
+              <span>Created after</span>
+              <input
+                type="date"
+                value={filters.createdAfter}
+                onChange={(event) =>
+                  updateFilter(
+                    "createdAfter",
+                    event.target.value
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Updated after</span>
+              <input
+                type="date"
+                value={filters.updatedAfter}
+                onChange={(event) =>
+                  updateFilter(
+                    "updatedAfter",
+                    event.target.value
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>Pushed after</span>
+              <input
+                type="date"
+                value={filters.pushedAfter}
+                onChange={(event) =>
+                  updateFilter(
+                    "pushedAfter",
+                    event.target.value
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              />
+            </label>
+
+            <label className="filter-field">
+              <span>License</span>
+              <select
+                value={filters.license}
+                onChange={(event) =>
+                  updateFilter(
+                    "license",
+                    event.target.value
+                  )
+                }
+                disabled={isLoading || isCollecting}
+              >
+                <option value="">Any license</option>
+                {LICENSE_OPTIONS.map((license) => (
+                  <option key={license.value} value={license.value}>
+                    {license.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {countActiveFilters(filters) > 0 && (
+            <p className="filter-hint">
+              {countActiveFilters(filters)} active filter
+              {countActiveFilters(filters) === 1 ? "" : "s"}. Click Search to apply them.
+            </p>
+          )}
+        </section>
 
         {error && (
           <div
@@ -1600,7 +2017,7 @@ export default function Home() {
       <footer className="footer">
         <p>
           GitHub Repository Search Tool ·
-          v0.1
+          v0.2
         </p>
       </footer>
     </main>

@@ -1,0 +1,8 @@
+.collection-progress-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+  color: #9ca3af;
+  font-size: 11px;
+}

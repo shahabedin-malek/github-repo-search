@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# v0.2 Phase 5 — Deduplication
 
-## Getting Started
+Phase 5 adds global repository deduplication to the Phase 4 server-side collection job.
 
-First, run the development server:
+## Why
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Phase 2 can split a broad GitHub query into multiple partitions. The same repository can therefore be returned by more than one partition. Phase 5 guarantees that the final collection contains one record per repository identity.
+
+## Identity
+
+The primary identity is the GitHub numeric repository `id`:
+
+```text
+id:12345678
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A defensive `fullName` fallback is used only when the id is not finite:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+fullName:owner/repository
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Server-side behavior
 
-## Learn More
+Every collection page is passed through:
 
-To learn more about Next.js, take a look at the following resources:
+```text
+GitHub page
+    ↓
+appendUniqueRepositories()
+    ↓
+repository identity index
+    ↓
+new records only
+    ↓
+records.jsonl
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The job now records:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `rawRecordsFetched` — every repository returned by GitHub
+- `recordsCollected` — unique repositories actually stored
+- `duplicatesSkipped` — records discarded because they were already seen
 
-## Deploy on Vercel
+## Files
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `lib/collection/job-store.ts` — persistent repository identity index and unique append operation
+- `lib/collection/job-worker.ts` — integrates deduplication into every collection step
+- `lib/collection/dedupe.ts` — pure/testable deduplication helper
+- `lib/collection/types.ts` — Phase 5 progress fields
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Storage
+
+Each job now contains:
+
+```text
+.data/collection-jobs/<jobId>/
+├── job.json
+├── records.jsonl
+└── repository-index.json
+```
+
+The index prevents the collector from scanning the entire records file on every page.
+
+## Scope boundary
+
+This phase does not redesign CSV generation. Phase 6 owns large CSV generation.
+
+This local file-backed index is intended for the current development architecture. Concurrency locking, durable multi-instance storage, and resume/retry semantics remain Phase 7 concerns.
